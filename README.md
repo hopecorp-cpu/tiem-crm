@@ -11,11 +11,9 @@ Nền của bản này là CRM Zalo do [HOPE Corp](https://ikihealing.com) dựn
 | Zalo: hộp thư 3 cột, gửi tin, nhiều nick, điểm nóng, nhãn, mẫu tin | **Chạy được** |
 | Danh sách khách + thẻ VIP / Mua lại suy từ đơn thật | **Chạy được** |
 | **Lịch hẹn**: thợ × khung giờ, dịch vụ nhiều thời lượng, khách tự đặt qua web | **Chạy được** |
+| **Tin nhắn Facebook / fanpage**: hộp thư, trả lời từ web, đồng hồ cửa sổ 24 giờ | **Chạy được** |
+| **Bot trả lời tự động** cả Zalo lẫn Facebook, biết khi nào phải im | **Chạy được** |
 | Đơn hàng | Lịch xong **tự sinh đơn**; chưa có màn nhập/sửa đơn tay |
-| Tin nhắn Facebook / fanpage | **Chưa có** |
-| Bot tư vấn tự động | **Chưa có** |
-
-Hai mảng chưa có sẽ bổ sung theo đợt.
 
 *(English summary at the bottom.)*
 
@@ -47,6 +45,31 @@ Hai mảng chưa có sẽ bổ sung theo đợt.
 
 Bài kiểm phần tính giờ: `npm run kiem` (31 ca — chồng giờ, nhả chỗ khi huỷ, ca tràn giờ đóng cửa, tỷ lệ đến). Ba lỗi nguy nhất ở đây đều không gãy build và không ném lỗi, nên phải có ca thử.
 
+## Tin nhắn Facebook
+
+- **Hộp thư fanpage ngay trong CRM**: khách nhắn page là tin đổ về đây, trả lời thẳng từ web — không phải mở Business Suite.
+- **Đồng hồ cửa sổ 24 giờ hiện trên từng hội thoại.** Messenger chỉ cho nhắn lại trong 24 giờ kể từ tin CUỐI của khách; quá giờ là Facebook chặn. App đếm ngược sẵn ("còn 3 giờ") và khoá ô soạn khi hết giờ, thay vì để bạn gõ xong mới báo lỗi.
+- **Token của page không bao giờ rời máy chủ** — màn hình chỉ hiện 4 ký tự cuối.
+- **Chữ ký webhook bắt buộc đúng**: mọi gói tin Meta gửi tới đều phải khớp `x-hub-signature-256` (HMAC SHA-256 với App Secret) mới được ghi vào kho. Không có chốt này thì bất kỳ ai biết địa chỉ webhook đều bơm tin giả vào hộp thư của bạn được.
+- **Webhook gửi lại cùng một tin không nhân đôi**: Meta gửi lặp khi mạng chập; mỗi tin khoá theo `mid` nên lần hai tự bỏ qua.
+- **Lỗi của Facebook dịch ra tiếng Việt**: hết hạn token, quá 24 giờ, thiếu quyền `pages_messaging` — nói rõ phải làm gì, không ném mã lỗi.
+
+## Bot trả lời
+
+Bot này **không tự gửi tin**. Nó chỉ trả lời câu hỏi *"nên nói gì"* — rồi Zalo gửi qua cầu nối, Facebook gửi qua Graph API. Tách vậy để bật/tắt bot không đụng gì tới đường gửi tin.
+
+- **Mặc định TẮT.** Bật bằng một ô trong app, không cần deploy.
+- **Biết khi nào phải im** — đây là phần quan trọng nhất:
+  - Khách nhắc tới khiếu nại, hoàn tiền, luật sư, dị ứng, sưng, nhiễm trùng, đau → bot **im hoàn toàn** và để người thật trả lời. Danh sách từ này bạn tự sửa trong app.
+  - Bot đáp tối đa 2 lượt liên tiếp (sửa được) rồi nhường người — khách không bị kẹt trong vòng lặp máy.
+  - Không hiểu câu hỏi thì **im**, không đoán bừa.
+  - Câu bot định nói mà dính **từ cấm** của ngành bạn thì bị chặn ngay trước khi gửi.
+  - Người thật vừa trả lời thì bot nghỉ, không chen ngang.
+- **Trả lời được**: giá dịch vụ (đọc từ bảng dịch vụ thật), giờ mở cửa và địa chỉ, **giờ còn trống hôm nay/mai (đọc từ lịch thật)**, và tra lịch hẹn của chính khách theo số điện thoại.
+- **Ô thử ngay trong app**: gõ một câu, xem bot định đáp gì và vì sao — trước khi bật cho khách thật.
+
+So khớp từ khoá có **ranh giới từ hợp tiếng Việt**. Nghe nhỏ nhưng là chỗ sập thật: `\b` của JavaScript chỉ hiểu chữ không dấu, nên bản đầu "tiệm ở **đâu** vậy" bị dính từ cầu cứu "**đau**" và mọi khách hỏi địa chỉ đều bị đẩy sang người thật; "trời đẹp **nhỉ anh**" thì dính từ chào "hi". Bài kiểm `npm run kiem` có 25 ca riêng cho phần này.
+
 ## Kiến trúc
 
 ```
@@ -67,10 +90,10 @@ Mỗi mảng = **một thư mục `app/`, một file `lib/`, một file migratio
 
 ```
 app/zalo/        lib/zalo-*.ts        supabase/002_zalo.sql
-app/lich/        lib/lich.ts          supabase/004_lich.sql      (sẽ thêm)
+app/lich/        lib/lich.ts          supabase/004_lich.sql
+app/facebook/    lib/facebook*.ts     supabase/003_facebook.sql
+app/bot/         lib/bot.ts           (dùng chung bảng của 003)
 app/don-hang/    lib/don-hang.ts      supabase/005_don-hang.sql  (sẽ thêm)
-app/facebook/    lib/fb-*.ts          supabase/003_facebook.sql  (sẽ thêm)
-app/bot/         lib/bot.ts
                  lib/auth.ts        ─┐
                  lib/supabase-*.ts   │  supabase/001_khoi_tao.sql  <- LÕI
                  lib/khach.ts       ─┘  (khách · người dùng · config)
@@ -82,6 +105,8 @@ app/bot/         lib/bot.ts
 
 - **zca-js là thư viện KHÔNG chính thức**, mô phỏng Zalo Web bằng tài khoản Zalo **cá nhân**. Việc này có thể vi phạm điều khoản sử dụng của Zalo và **tài khoản có thể bị hạn chế hoặc khoá vĩnh viễn**. Cân nhắc dùng nick phụ/hotline thay vì nick cá nhân quan trọng. Dự án này không liên kết với Zalo/VNG; bạn tự chịu trách nhiệm khi dùng.
 - **Zalo chỉ cho MỘT phiên máy tính mỗi nick** (điện thoại luôn giữ được). Nick đã nối vào CRM thì đừng mở Zalo PC/Web ở máy khác — mở là cầu bị đá ra (DuplicateConnection) và phải quét QR lại.
+- **Facebook bắt duyệt ứng dụng trước khi chạy thật.** App Meta mới chỉ nhắn được với tài khoản có vai trò trong app (chính bạn, tester). Muốn trả lời khách thật phải xin duyệt quyền `pages_messaging` — Meta duyệt tay, thường vài ngày. Cứ nối trước, dùng thử bằng nick của mình, rồi nộp duyệt.
+- **Cửa sổ 24 giờ của Messenger là luật của Meta, không lách được.** Khách im quá 24 giờ thì không nhắn lại được nữa (trừ vài loại tin có thẻ riêng, phải xin thêm quyền). Đừng để khách chờ qua đêm.
 - **Nội dung chat + SĐT khách là dữ liệu cá nhân.** Schema đã bật RLS deny-all và app gác quyền hai lớp, nhưng bạn vẫn phải tự lo phần của mình: giữ kín `SUPABASE_SERVICE_ROLE_KEY`, file phiên `~/.zalo-crm-session-*.json` (tương đương mật khẩu Zalo, đã chmod 600), và tuân thủ pháp luật bảo vệ dữ liệu cá nhân nơi bạn hoạt động.
 
 ## Cài đặt
@@ -91,13 +116,20 @@ app/bot/         lib/bot.ts
 1. Tạo project tại [supabase.com](https://supabase.com) (gói free đủ dùng).
 2. Mở **SQL Editor** → dán toàn bộ [`supabase/001_khoi_tao.sql`](supabase/001_khoi_tao.sql) → Run.
 
-Chạy tiếp `supabase/004_lich.sql` nếu muốn dùng lịch hẹn (cần quyền tạo extension `btree_gist` — Supabase cho sẵn).
+Chạy tiếp, mỗi file một lượt Run:
+
+| File | Cần khi nào |
+|---|---|
+| [`supabase/003_facebook.sql`](supabase/003_facebook.sql) | dùng hộp thư Facebook và/hoặc bot trả lời |
+| [`supabase/004_lich.sql`](supabase/004_lich.sql) | dùng lịch hẹn (cần extension `btree_gist` — Supabase cho sẵn) |
+
+Dán nhầm hai lần không sao, các file chạy lại được và không nhân đôi dữ liệu.
 
 ### 2. Web
 
 ```bash
-git clone https://github.com/hopecorp-cpu/zalo-crm.git
-cd zalo-crm
+git clone https://github.com/hopecorp-cpu/tiem-crm.git
+cd tiem-crm
 cp .env.example .env.local   # điền 3 giá trị từ Supabase → Project Settings → API
 npm install
 npm run dev                  # http://localhost:3000
@@ -127,11 +159,35 @@ Giữ `zalo-cau-noi-quan-ly.mjs` chạy nền bằng pm2 / systemd / launchd, v�
 pm2 start scripts/zalo-cau-noi-quan-ly.mjs --name zalo-cau-noi
 ```
 
-### 5. Gán nick cho nhân viên
+### 5. Nối Facebook (bỏ qua nếu chỉ dùng Zalo)
+
+1. Vào [developers.facebook.com](https://developers.facebook.com) → **Create App** → kiểu **Business** → thêm sản phẩm **Messenger**.
+2. Trong app Meta, mục **Messenger → Settings → Access Tokens**: chọn page của tiệm, bấm **Generate Token**, chép token đó.
+3. Vào CRM → **Nối Facebook** → dán **ID page** + **token** → Lưu. App tự gọi thử Facebook để xác nhận token sống.
+4. Lấy **App Secret** (Meta → Settings → Basic) bỏ vào biến môi trường `FB_APP_SECRET` rồi deploy lại. Thiếu biến này webhook sẽ từ chối MỌI tin — cố ý, vì không có nó thì không phân biệt được tin thật với tin giả.
+5. Trong CRM → Nối Facebook, chép **Verify Token** và **địa chỉ webhook** đang hiện trên màn hình. Quay lại Meta → **Messenger → Settings → Webhooks** → **Add Callback URL**, dán hai thứ đó, rồi tick nhận sự kiện `messages` và `messaging_postbacks`.
+6. Vẫn ở ô đó, bấm **Add Subscriptions** cho page của tiệm.
+7. Nhắn thử vào page bằng nick cá nhân — tin phải hiện trong CRM trong vài giây.
+
+Muốn trả lời khách THẬT (không phải nick của mình) thì phải xin Meta duyệt quyền `pages_messaging`: Meta → **App Review → Permissions and Features**.
+
+### 6. Bật bot (tuỳ chọn)
+
+Vào CRM → **Bot trả lời** → điền địa chỉ tiệm, chỉnh danh sách từ phải nhường người thật, **gõ thử vài câu xem bot định đáp gì**, rồi mới gạt công tắc bật.
+
+Facebook thì bot chạy ngay khi webhook có tin. Zalo thì bot phải được gọi theo nhịp — khai một cron mỗi phút (Vercel Cron, cron-job.org, hay `crontab` trên máy chạy cầu nối):
+
+```
+* * * * *  curl -s "https://<tên-miền-của-bạn>/api/bot/zalo?key=$BOT_QUET_KEY"
+```
+
+Đặt `BOT_QUET_KEY` là một chuỗi bạn tự nghĩ, khai trong biến môi trường. Thiếu khoá thì đường này không ai gọi được.
+
+### 7. Gán nick cho nhân viên
 
 Trong Supabase → Table Editor → `zalo_bridge_accounts`: điền cột `sale_name` đúng bằng `ho_ten` của người đó trong bảng `nguoi_dung`. Quản lý không cần gán.
 
-### 6. Tuỳ chọn
+### 8. Tuỳ chọn
 
 - **Thẻ khách theo đơn hàng**: đổ đơn của bạn vào bảng `don_hang` (sdt · khach · khach_tra · ngay · san_pham) — CRM tự gắn VIP/Mua lại/Đã mua và hiện lịch sử mua ở cột hồ sơ.
 - **Từ cấm**: mỗi ngành có luật quảng cáo riêng. Khai một lần trong SQL Editor:
@@ -144,6 +200,12 @@ Trong Supabase → Table Editor → `zalo_bridge_accounts`: điền cột `sale_
 - **Số thành viên nhóm**: nếu bạn có máy đếm riêng, ghi vào bảng `zalo_group_snapshots` là trang Nhóm tự hiện số.
 
 ## Câu hỏi thường gặp
+
+**Nhắn Facebook báo "quá 24 giờ"?** Luật của Messenger: khách im quá 24 tiếng là Meta chặn, không phải app hỏng. Mỗi hội thoại có đồng hồ đếm ngược để bạn thấy trước.
+
+**Nhắn thử vào page mà CRM không thấy tin?** Theo thứ tự: (1) đã bấm **Add Subscriptions** cho page ở Meta chưa; (2) `FB_APP_SECRET` đã khai và đã deploy lại chưa — thiếu là webhook từ chối hết; (3) Verify Token trên Meta có trùng y hệt chuỗi trong CRM không.
+
+**Bot không đáp dù đã bật?** Phần lớn là bot **cố ý im**: câu khách có từ phải nhường người thật, hoặc bot đã đáp đủ số lượt liên tiếp, hoặc nó không hiểu câu hỏi. Gõ đúng câu đó vào ô thử ở màn Bot trả lời — nó nói rõ vì sao im.
 
 **Nick báo OFF dù không ai đụng gì?** Gần như chắc là nick vừa đăng nhập Zalo PC/Web ở máy khác nên cầu bị đá ra. Quét QR nối lại ở màn Kết nối Zalo.
 
@@ -179,4 +241,4 @@ Phần mềm giao nguyên trạng, **không bảo hành**.
 
 ## English summary
 
-**Tiệm CRM** is a team inbox / CRM for Vietnamese businesses that sell and support customers over personal Zalo accounts (Zalo has no official API for personal accounts). Stack: Next.js + Supabase + [zca-js](https://github.com/RFS-ADRENO/zca-js). A bridge script on an always-on machine listens for messages and sends queued replies; the web app provides a three-pane team inbox with per-agent permissions, deterministic lead scoring, order-based customer badges, labels, message templates, and a configurable banned-words gate for regulated industries. **Warning:** zca-js is an unofficial API — accounts may be banned; use at your own risk. Licensed under the MIT License by HOPE Corp. Provided as is, without warranty.
+**Tiệm CRM** is a team inbox / CRM for Vietnamese businesses that sell and support customers over personal Zalo accounts (Zalo has no official API for personal accounts). Stack: Next.js + Supabase + [zca-js](https://github.com/RFS-ADRENO/zca-js). A bridge script on an always-on machine listens for messages and sends queued replies; the web app provides a three-pane team inbox with per-agent permissions, deterministic lead scoring, order-based customer badges, labels, message templates, and a configurable banned-words gate for regulated industries. It also includes an **appointment book** (per-staff day grid, variable service durations, public self-booking page, double-booking prevented by a Postgres `EXCLUDE` constraint rather than application code), a **Facebook Page inbox** (signed webhooks, 24-hour messaging-window countdown, page tokens never leave the server), and an **auto-reply bot** for both channels that is off by default and designed around knowing when to stay silent — it hands off to a human on complaint, refund, legal, or medical keywords, caps consecutive automated replies, and says nothing rather than guessing. **Warning:** zca-js is an unofficial API — accounts may be banned; use at your own risk. Licensed under the MIT License by HOPE Corp. Provided as is, without warranty.

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
   LayoutDashboard, MessageSquare, Users, UsersRound, Search, Smartphone, X, QrCode, FileText, LogOut,
-  CalendarDays, Settings,
+  CalendarDays, Settings, Facebook, Bot,
 } from "lucide-react";
 import { getBrowserClient } from "@/lib/supabase-browser";
 
@@ -20,10 +20,13 @@ const MENU = [
   { href: "/zalo", label: "Tổng quan", icon: LayoutDashboard, chinhXac: true },
   { href: "/lich", label: "Lịch hẹn", icon: CalendarDays, chinhXac: true },
   { href: "/zalo/khach-hang", label: "Khách hàng", icon: Users },
-  { href: "/zalo/tin-nhan", label: "Tin nhắn", icon: MessageSquare, badgeKey: "tinNhan" as const },
+  { href: "/zalo/tin-nhan", label: "Tin nhắn Zalo", icon: MessageSquare, badgeKey: "tinNhan" as const },
+  { href: "/facebook", label: "Tin nhắn Facebook", icon: Facebook, chinhXac: true },
   { href: "/zalo/nhom", label: "Nhóm cộng đồng", icon: UsersRound },
   { href: "/zalo/mau-tin", label: "Mẫu tin nhanh", icon: FileText },
+  { href: "/bot", label: "Bot trả lời", icon: Bot },
   { href: "/lich/cai-dat", label: "Dịch vụ & thợ", icon: Settings },
+  { href: "/facebook/ket-noi", label: "Nối Facebook", icon: Facebook },
   { href: "/zalo/ket-noi", label: "Kết nối Zalo", icon: QrCode },
 ];
 

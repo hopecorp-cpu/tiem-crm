@@ -21,7 +21,10 @@ export async function middleware(req: NextRequest) {
   // (bẫy máy, trần số lượt, chỉ trả giờ trống chứ không trả khách của người khác).
   const isPublic =
     path === "/login" || path.startsWith("/_next") || path.startsWith("/api/auth") ||
-    path === "/dat-lich" || path.startsWith("/api/lich/cong-khai");
+    path === "/dat-lich" || path.startsWith("/api/lich/cong-khai") ||
+    // Webhook Facebook: Meta gọi vào, không có phiên đăng nhập nào. Route tự gác bằng
+    // CHỮ KÝ HMAC (App Secret) — chặt hơn hẳn đăng nhập, vì chỉ Meta ký được.
+    path === "/api/fb/webhook";
   if (!user && !isPublic) return NextResponse.redirect(new URL("/login", req.url));
   if (user && path === "/login") return NextResponse.redirect(new URL("/zalo", req.url));
   return res;
