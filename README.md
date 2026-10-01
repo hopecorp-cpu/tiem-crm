@@ -10,12 +10,12 @@ Nền của bản này là CRM Zalo do [HOPE Corp](https://ikihealing.com) dựn
 |---|---|
 | Zalo: hộp thư 3 cột, gửi tin, nhiều nick, điểm nóng, nhãn, mẫu tin | **Chạy được** |
 | Danh sách khách + thẻ VIP / Mua lại suy từ đơn thật | **Chạy được** |
-| Đơn hàng — bảng `don_hang` | Có bảng, **chưa có màn nhập/sửa đơn** |
-| Lịch hẹn theo thợ × khung giờ | **Chưa có** |
+| **Lịch hẹn**: thợ × khung giờ, dịch vụ nhiều thời lượng, khách tự đặt qua web | **Chạy được** |
+| Đơn hàng | Lịch xong **tự sinh đơn**; chưa có màn nhập/sửa đơn tay |
 | Tin nhắn Facebook / fanpage | **Chưa có** |
 | Bot tư vấn tự động | **Chưa có** |
 
-Bốn mảng chưa có sẽ bổ sung theo đợt. Cài bản này trước để bấm thử — biết mình thực sự cần gì ở lịch hẹn rồi hãy làm tiếp; nghe tả thì ai cũng gật, cài vào mới thấy lệch nghề.
+Hai mảng chưa có sẽ bổ sung theo đợt.
 
 *(English summary at the bottom.)*
 
@@ -33,6 +33,19 @@ Bốn mảng chưa có sẽ bổ sung theo đợt. Cài bản này trước đ�
 - **Tin thu hồi vẫn đọc được**: kho giữ nội dung gốc, hiện kèm nhãn "đã thu hồi lúc…".
 - **Kết nối nick ngay trên web**: quản lý bấm "Lấy mã QR", mã hiện trên trang, nhân viên quét bằng điện thoại ở bất cứ đâu.
 - **Nói thật khi hỏng**: tuổi kho hiện trên thanh trạng thái, nick mất kết nối gắn nhãn OFF — "kho đứng" và "khách không nhắn" là hai chuyện khác nhau và app phân biệt được.
+
+## Lịch hẹn
+
+- **Lịch ngày dạng cột**: mỗi thợ một cột, ô hẹn cao ĐÚNG theo số phút của dịch vụ — nhìn một cái thấy chỗ trống, không phải đọc danh sách rồi tự nhẩm.
+- **Mỗi dịch vụ một thời lượng riêng** (sơn gel 60', nối mi 150'…). Không khoá cứng "mỗi ca 30 phút" như lịch hẹn thường thấy, vì khoá cứng thì hoặc chặn mất chỗ trống, hoặc xếp chồng hai khách.
+- **Không thể trùng giờ — chặn ở tầng CSDL**, không phải ở tầng web. Hai người cùng bấm đặt một khung giờ thì kiểm bằng mã vẫn lọt; ràng buộc `EXCLUDE` của Postgres mới chặn được thật. Huỷ lịch thì nhả chỗ, khách vắng thì vẫn giữ chỗ (để cuối tháng còn đếm được tỷ lệ bỏ hẹn).
+- **Khách tự đặt qua web** ở `/dat-lich` — không cần đăng nhập, không cần tải app. Dán link vào tiểu sử Facebook/Zalo. Trang này chỉ hiện GIỜ CÒN TRỐNG, tuyệt đối không hiện tên hay số của khách nào khác.
+- **Xong một khách là sinh đơn hàng** vào bảng `don_hang` — nên thẻ VIP / Mua lại bên hộp thư Zalo tự hiện, hai mảng gặp nhau ở số điện thoại đã chuẩn hoá.
+- **Nhắc lịch ngày mai**: danh sách khách cần nhắc + tin soạn sẵn, bấm Chép rồi dán vào Zalo. Nhắc xong đánh dấu một lần cho cả danh sách.
+- **Tỷ lệ khách đến**: đo thật trên số hẹn đã tới hạn. Chưa có hẹn nào tới hạn thì ghi *"chưa đo được"*, KHÔNG hiện 0%.
+- Giờ mở cửa, bước chia giờ, tên tiệm, bật/tắt đặt web: sửa trong app, không cần deploy lại.
+
+Bài kiểm phần tính giờ: `npm run kiem` (31 ca — chồng giờ, nhả chỗ khi huỷ, ca tràn giờ đóng cửa, tỷ lệ đến). Ba lỗi nguy nhất ở đây đều không gãy build và không ném lỗi, nên phải có ca thử.
 
 ## Kiến trúc
 
@@ -77,6 +90,8 @@ app/bot/         lib/bot.ts
 
 1. Tạo project tại [supabase.com](https://supabase.com) (gói free đủ dùng).
 2. Mở **SQL Editor** → dán toàn bộ [`supabase/001_khoi_tao.sql`](supabase/001_khoi_tao.sql) → Run.
+
+Chạy tiếp `supabase/004_lich.sql` nếu muốn dùng lịch hẹn (cần quyền tạo extension `btree_gist` — Supabase cho sẵn).
 
 ### 2. Web
 

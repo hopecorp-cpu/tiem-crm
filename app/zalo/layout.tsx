@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser, getServiceClient } from "@/lib/supabase-server";
 import { laQuanLy } from "@/lib/auth";
 import { nickChoPhep, layTrangThaiKho, layNick } from "@/lib/hop-thu-zalo-server";
-import ZaloNav, { ZaloThanhTop } from "./ZaloNav";
-import { ZaloTabDuoi } from "./ZaloMobile";
+import Nav, { ThanhTop } from "@/components/Nav";
+import TabDuoi from "@/components/TabDuoi";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +40,7 @@ export default async function ZaloLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#F5F7FA]">
-      <ZaloNav
+      <Nav
         ten={user.ho_ten || user.email || ""}
         vaiTro={laQuanLy(user.vai_tro) ? "Quản lý" : "Nhân viên"}
         online={online}
@@ -48,9 +48,9 @@ export default async function ZaloLayout({ children }: { children: React.ReactNo
         nick={nickHien.map((n) => ({ ownId: n.ownId, sale: n.sale, tenZalo: n.tenZalo, song: n.song }))}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <ZaloThanhTop ten={user.ho_ten || ""} />
+        <ThanhTop ten={user.ho_ten || ""} />
         <div className="min-h-0 min-w-0 flex-1 overflow-auto">{children}</div>
-        <ZaloTabDuoi soTinNhan={badge.tinNhan} />
+        <TabDuoi soTinNhan={badge.tinNhan} />
       </div>
     </div>
   );

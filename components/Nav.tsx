@@ -5,27 +5,34 @@ import { useState } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
   LayoutDashboard, MessageSquare, Users, UsersRound, Search, Smartphone, X, QrCode, FileText, LogOut,
+  CalendarDays, Settings,
 } from "lucide-react";
 import { getBrowserClient } from "@/lib/supabase-browser";
 
 /**
- * SIDEBAR của khu Zalo CRM: logo trên cùng · menu dọc · "Online" · người dùng ở đáy.
- * Mọi mục đều trỏ tới trang có thật — không dựng trang trống chỉ để đủ số mục.
+ * VỎ CHUNG của cả app: logo · menu dọc · "Online" · người dùng ở đáy.
+ * Nằm ở `components/` chứ không trong `app/zalo/` vì nay có nhiều mảng dùng (Zalo, lịch hẹn…) —
+ * mảng này cấm nhập file của mảng kia, vỏ thì phải ở lõi.
+ *
+ * Mọi mục đều trỏ tới trang CÓ THẬT — không dựng trang trống chỉ để đủ số mục.
  */
 const MENU = [
   { href: "/zalo", label: "Tổng quan", icon: LayoutDashboard, chinhXac: true },
+  { href: "/lich", label: "Lịch hẹn", icon: CalendarDays, chinhXac: true },
   { href: "/zalo/khach-hang", label: "Khách hàng", icon: Users },
   { href: "/zalo/tin-nhan", label: "Tin nhắn", icon: MessageSquare, badgeKey: "tinNhan" as const },
   { href: "/zalo/nhom", label: "Nhóm cộng đồng", icon: UsersRound },
   { href: "/zalo/mau-tin", label: "Mẫu tin nhanh", icon: FileText },
+  { href: "/lich/cai-dat", label: "Dịch vụ & thợ", icon: Settings },
   { href: "/zalo/ket-noi", label: "Kết nối Zalo", icon: QrCode },
 ];
 
-export default function ZaloNav({
-  ten, vaiTro, online, badge, nick = [],
+export default function Nav({
+  ten, vaiTro, online, badge = { tinNhan: 0, viec: 0 }, nick = [],
 }: {
   ten: string; vaiTro?: string | null; online: boolean;
-  badge: { tinNhan: number; viec: number };
+  /** Số đỏ trên menu. Mảng nào không có số thì bỏ trống — vỏ không ép mảng phải đếm hộ Zalo. */
+  badge?: { tinNhan: number; viec: number };
   /** Zalo đang nối vào CRM — hiện ở đáy, kèm chấm xanh/đỏ theo trạng thái nick. */
   nick?: Array<{ ownId: string; sale: string | null; tenZalo: string | null; song: boolean | null }>;
 }) {
@@ -38,13 +45,13 @@ export default function ZaloNav({
   };
   return (
     <aside className="hidden h-screen w-[13.5rem] shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-      <Link href="/zalo" className="flex items-center gap-2.5 px-4 py-4">
+      <Link href="/lich" className="flex items-center gap-2.5 px-4 py-4">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0068FF] text-white">
           <MessageSquare className="h-5 w-5" />
         </span>
         <span className="leading-tight">
-          <span className="block text-base font-bold tracking-tight text-[#0068FF]">Zalo CRM</span>
-          <span className="block text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400">mã nguồn mở</span>
+          <span className="block text-base font-bold tracking-tight text-[#0068FF]">Tiệm CRM</span>
+          <span className="block text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400">lịch · khách · zalo</span>
         </span>
       </Link>
 
@@ -116,9 +123,9 @@ export default function ZaloNav({
  * ĐÚNG trang đang xem qua iframe rộng 390px — bản mobile THẬT (breakpoint theo bề rộng
  * iframe nên tab dưới + thanh xanh tự bật), không phải ảnh mô phỏng.
  */
-export function ZaloThanhTop({ ten }: { ten: string }) {
+export function ThanhTop({ ten }: { ten: string }) {
   const [moDienThoai, setMoDienThoai] = useState(false);
-  const duong = usePathname() || "/zalo";
+  const duong = usePathname() || "/lich";
   const qs = useSearchParams()?.toString();
   const src = `${duong}${qs ? `?${qs}` : ""}`;
   return (<>

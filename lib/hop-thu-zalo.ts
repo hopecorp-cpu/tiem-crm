@@ -147,21 +147,10 @@ export function chuCuaTinCuoi(s?: string | null): string {
   return `[${NHAN_LOAI_TIN[t.toLowerCase()] || "Tin đính kèm"}]`;
 }
 
-/** Chuẩn hoá SĐT về 84xxx — TRÙNG chuanSdt() của scripts/lib/zalo-chuan.mjs.
- *  Script .mjs không import được lib/*.ts nên buộc có hai bản; sửa một chỗ phải sửa cả hai. */
-export function chuanSdt(p?: string | null): string | null {
-  if (!p) return null;
-  let s = String(p).replace(/[^0-9]/g, "");
-  if (!s) return null;
-  if (s.startsWith("0")) s = "84" + s.slice(1);
-  if (!s.startsWith("84")) s = "84" + s;
-  return s.length >= 10 && s.length <= 13 ? s : null;
-}
-
-/** Ngày hôm nay YYYY-MM-DD theo giờ Việt Nam. */
-export function vnDateStr(): string {
-  return new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
-}
+/** chuanSdt + vnDateStr đã CHUYỂN LÊN LÕI `lib/chung.ts` vì mảng lịch hẹn cũng cần.
+ *  Xuất lại ở đây để mọi chỗ đang gọi từ file này không phải sửa — nhưng mã MỚI thì
+ *  nhập thẳng từ `@/lib/chung`, đừng đi vòng qua mảng Zalo. */
+export { chuanSdt, vnDateStr } from "@/lib/chung";
 
 /** Số giờ kể từ một mốc. */
 export function gioTu(iso?: string | null): number | null {

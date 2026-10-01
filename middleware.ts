@@ -17,7 +17,11 @@ export async function middleware(req: NextRequest) {
   );
   const { data: { user } } = await sb.auth.getUser();
   const path = req.nextUrl.pathname;
-  const isPublic = path === "/login" || path.startsWith("/_next") || path.startsWith("/api/auth");
+  // CÔNG KHAI: trang khách tự đặt lịch + đúng một route API phục vụ nó. Route đó tự gác
+  // (bẫy máy, trần số lượt, chỉ trả giờ trống chứ không trả khách của người khác).
+  const isPublic =
+    path === "/login" || path.startsWith("/_next") || path.startsWith("/api/auth") ||
+    path === "/dat-lich" || path.startsWith("/api/lich/cong-khai");
   if (!user && !isPublic) return NextResponse.redirect(new URL("/login", req.url));
   if (user && path === "/login") return NextResponse.redirect(new URL("/zalo", req.url));
   return res;
