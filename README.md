@@ -15,6 +15,8 @@ Nền của bản này là CRM Zalo do [HOPE Corp](https://ikihealing.com) dựn
 | **Bot trả lời tự động** cả Zalo lẫn Facebook, biết khi nào phải im | **Chạy được** |
 | **Đơn hàng**: ghi tay, sửa, tìm, tổng kết tháng; lịch xong tự sinh đơn | **Chạy được** |
 
+**Dùng hằng ngày thì bấm vào đâu: [Hướng dẫn sử dụng từng màn hình](docs/HUONG-DAN-SU-DUNG.md).**
+
 *(English summary at the bottom.)*
 
 ---
