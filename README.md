@@ -13,7 +13,7 @@ Nền của bản này là CRM Zalo do [HOPE Corp](https://ikihealing.com) dựn
 | **Lịch hẹn**: thợ × khung giờ, dịch vụ nhiều thời lượng, khách tự đặt qua web | **Chạy được** |
 | **Tin nhắn Facebook / fanpage**: hộp thư, trả lời từ web, đồng hồ cửa sổ 24 giờ | **Chạy được** |
 | **Bot trả lời tự động** cả Zalo lẫn Facebook, biết khi nào phải im | **Chạy được** |
-| Đơn hàng | Lịch xong **tự sinh đơn**; chưa có màn nhập/sửa đơn tay |
+| **Đơn hàng**: ghi tay, sửa, tìm, tổng kết tháng; lịch xong tự sinh đơn | **Chạy được** |
 
 *(English summary at the bottom.)*
 
@@ -70,6 +70,18 @@ Bot này **không tự gửi tin**. Nó chỉ trả lời câu hỏi *"nên nói
 
 So khớp từ khoá có **ranh giới từ hợp tiếng Việt**. Nghe nhỏ nhưng là chỗ sập thật: `\b` của JavaScript chỉ hiểu chữ không dấu, nên bản đầu "tiệm ở **đâu** vậy" bị dính từ cầu cứu "**đau**" và mọi khách hỏi địa chỉ đều bị đẩy sang người thật; "trời đẹp **nhỉ anh**" thì dính từ chào "hi". Bài kiểm `npm run kiem` có 25 ca riêng cho phần này.
 
+## Đơn hàng
+
+- **Ghi đơn bằng tay** ngay tại quầy, và **sửa lại** khi gõ nhầm. Lịch hẹn xong vẫn tự sinh đơn như cũ — hai đường đổ chung MỘT bảng, vì tách ra thì thẻ VIP / Mua lại bên hộp thư Zalo chỉ nhìn thấy một nửa số tiền khách đã trả.
+- **Gõ tiền kiểu người Việt**: `500k` · `1tr2` · `1,5 triệu` · `1.500.000` đều hiểu. Nhưng số trần là số đúng như gõ — `350` là **350 đồng**, app **không đoán hộ** thành 350 nghìn; nó in lại số vừa hiểu ngay dưới ô (`= 350 đ`) để bạn thấy sai là sửa luôn. Đoán hộ thì sai âm thầm, mà sai âm thầm về tiền là sai đắt nhất.
+- **Tổng kết tháng**: số đơn (tách rõ *từ lịch* với *ghi tay*), doanh thu, giỏ trung bình, số khách thật (đếm theo số điện thoại, không đếm theo đơn).
+- **Chưa có đơn thì ghi "chưa đo được"**, không hiện 0 đ — 0 đọc thành bán ế.
+- **Kho hỏng thì nói hỏng**: đọc không được, màn hình báo đỏ "con số dưới đây không đáng tin" thay vì hiện danh sách rỗng rồi để bạn tưởng tháng này không ai mua.
+- **Đơn sinh từ lịch thì sửa được nhưng không xoá được** — xoá nó thì lịch còn trỏ vào một đơn đã chết, và bấm "xong" lần nữa cũng không sinh lại được. Muốn bỏ hẳn thì huỷ lịch hẹn.
+- Tìm theo tên khách, đuôi số điện thoại, tên món hoặc người bán.
+
+Bài kiểm: `npm run kiem` (54 ca riêng cho mảng này — chủ yếu là đọc số tiền và các mốc tháng).
+
 ## Kiến trúc
 
 ```
@@ -93,7 +105,7 @@ app/zalo/        lib/zalo-*.ts        supabase/002_zalo.sql
 app/lich/        lib/lich.ts          supabase/004_lich.sql
 app/facebook/    lib/facebook*.ts     supabase/003_facebook.sql
 app/bot/         lib/bot.ts           (dùng chung bảng của 003)
-app/don-hang/    lib/don-hang.ts      supabase/005_don-hang.sql  (sẽ thêm)
+app/don-hang/    lib/don-hang.ts      supabase/005_don_hang.sql
                  lib/auth.ts        ─┐
                  lib/supabase-*.ts   │  supabase/001_khoi_tao.sql  <- LÕI
                  lib/khach.ts       ─┘  (khách · người dùng · config)
@@ -122,6 +134,7 @@ Chạy tiếp, mỗi file một lượt Run:
 |---|---|
 | [`supabase/003_facebook.sql`](supabase/003_facebook.sql) | dùng hộp thư Facebook và/hoặc bot trả lời |
 | [`supabase/004_lich.sql`](supabase/004_lich.sql) | dùng lịch hẹn (cần extension `btree_gist` — Supabase cho sẵn) |
+| [`supabase/005_don_hang.sql`](supabase/005_don_hang.sql) | dùng màn đơn hàng (chỉ thêm cột vào bảng đã có, không dựng bảng mới) |
 
 Dán nhầm hai lần không sao, các file chạy lại được và không nhân đôi dữ liệu.
 
@@ -189,7 +202,7 @@ Trong Supabase → Table Editor → `zalo_bridge_accounts`: điền cột `sale_
 
 ### 8. Tuỳ chọn
 
-- **Thẻ khách theo đơn hàng**: đổ đơn của bạn vào bảng `don_hang` (sdt · khach · khach_tra · ngay · san_pham) — CRM tự gắn VIP/Mua lại/Đã mua và hiện lịch sử mua ở cột hồ sơ.
+- **Thẻ khách theo đơn hàng**: đơn ghi ở màn **Đơn hàng** (hoặc đổ sẵn vào bảng `don_hang`: sdt · khach · khach_tra · ngay · san_pham) — CRM tự gắn VIP/Mua lại/Đã mua và hiện lịch sử mua ở cột hồ sơ.
 - **Từ cấm**: mỗi ngành có luật quảng cáo riêng. Khai một lần trong SQL Editor:
   ```sql
   INSERT INTO config (key, value, description)
@@ -204,6 +217,8 @@ Trong Supabase → Table Editor → `zalo_bridge_accounts`: điền cột `sale_
 **Nhắn Facebook báo "quá 24 giờ"?** Luật của Messenger: khách im quá 24 tiếng là Meta chặn, không phải app hỏng. Mỗi hội thoại có đồng hồ đếm ngược để bạn thấy trước.
 
 **Nhắn thử vào page mà CRM không thấy tin?** Theo thứ tự: (1) đã bấm **Add Subscriptions** cho page ở Meta chưa; (2) `FB_APP_SECRET` đã khai và đã deploy lại chưa — thiếu là webhook từ chối hết; (3) Verify Token trên Meta có trùng y hệt chuỗi trong CRM không.
+
+**Gõ "350" vào ô tiền mà ra 350 đồng?** Đúng như thiết kế: số trần là số đúng như gõ, app không đoán hộ. Muốn 350 nghìn thì gõ `350k`. Dòng chữ ngay dưới ô luôn in lại số nó vừa hiểu.
 
 **Bot không đáp dù đã bật?** Phần lớn là bot **cố ý im**: câu khách có từ phải nhường người thật, hoặc bot đã đáp đủ số lượt liên tiếp, hoặc nó không hiểu câu hỏi. Gõ đúng câu đó vào ô thử ở màn Bot trả lời — nó nói rõ vì sao im.
 
@@ -241,4 +256,4 @@ Phần mềm giao nguyên trạng, **không bảo hành**.
 
 ## English summary
 
-**Tiệm CRM** is a team inbox / CRM for Vietnamese businesses that sell and support customers over personal Zalo accounts (Zalo has no official API for personal accounts). Stack: Next.js + Supabase + [zca-js](https://github.com/RFS-ADRENO/zca-js). A bridge script on an always-on machine listens for messages and sends queued replies; the web app provides a three-pane team inbox with per-agent permissions, deterministic lead scoring, order-based customer badges, labels, message templates, and a configurable banned-words gate for regulated industries. It also includes an **appointment book** (per-staff day grid, variable service durations, public self-booking page, double-booking prevented by a Postgres `EXCLUDE` constraint rather than application code), a **Facebook Page inbox** (signed webhooks, 24-hour messaging-window countdown, page tokens never leave the server), and an **auto-reply bot** for both channels that is off by default and designed around knowing when to stay silent — it hands off to a human on complaint, refund, legal, or medical keywords, caps consecutive automated replies, and says nothing rather than guessing. **Warning:** zca-js is an unofficial API — accounts may be banned; use at your own risk. Licensed under the MIT License by HOPE Corp. Provided as is, without warranty.
+**Tiệm CRM** is a team inbox / CRM for Vietnamese businesses that sell and support customers over personal Zalo accounts (Zalo has no official API for personal accounts). Stack: Next.js + Supabase + [zca-js](https://github.com/RFS-ADRENO/zca-js). A bridge script on an always-on machine listens for messages and sends queued replies; the web app provides a three-pane team inbox with per-agent permissions, deterministic lead scoring, order-based customer badges, labels, message templates, and a configurable banned-words gate for regulated industries. It also includes an **appointment book** (per-staff day grid, variable service durations, public self-booking page, double-booking prevented by a Postgres `EXCLUDE` constraint rather than application code), a **Facebook Page inbox** (signed webhooks, 24-hour messaging-window countdown, page tokens never leave the server), an **order book** (manual entry and editing, Vietnamese shorthand money input such as `500k` / `1tr2`, monthly totals; orders created by the appointment book land in the same table so customer badges stay correct), and an **auto-reply bot** for both channels that is off by default and designed around knowing when to stay silent — it hands off to a human on complaint, refund, legal, or medical keywords, caps consecutive automated replies, and says nothing rather than guessing. **Warning:** zca-js is an unofficial API — accounts may be banned; use at your own risk. Licensed under the MIT License by HOPE Corp. Provided as is, without warranty.

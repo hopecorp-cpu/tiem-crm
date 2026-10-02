@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Users, CalendarDays, Bell } from "lucide-react";
+import { MessageSquare, Users, CalendarDays, Bell, Receipt } from "lucide-react";
 
 /**
  * TAB DƯỚI cho màn điện thoại — vỏ chung của cả app, nên nằm ở `components/` chứ không
@@ -15,6 +15,7 @@ export default function TabDuoi({ soTinNhan }: { soTinNhan?: number }) {
   const duong = usePathname() || "";
   const TAB = [
     { href: "/lich", label: "Lịch hẹn", icon: CalendarDays },
+    { href: "/don-hang", label: "Đơn hàng", icon: Receipt },
     { href: "/zalo/tin-nhan", label: "Tin nhắn", icon: MessageSquare, so: soTinNhan },
     { href: "/zalo/khach-hang", label: "Khách hàng", icon: Users },
     { href: "/zalo", label: "Thông báo", icon: Bell, khop: (d: string) => d === "/zalo" },
